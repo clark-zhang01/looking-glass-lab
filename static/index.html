@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Looking Glass 3D Lab</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    
+    <!-- Three.js and dependencies from CDN -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <!-- Load Looking Glass WebXR UMD Bundle -->
+    <script src="/static/libs/webxr.js"></script>
+    <style>
+        .protocol-warning {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: #ff0055;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            font-weight: bold;
+            z-index: 9999;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="protocol-warning" class="protocol-warning">
+        WARNING: WebXR requires HTTPS or localhost. Please enable "Insecure origins treated as secure" in chrome://flags.
+    </div>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="lab-header">
+            <div class="logo">LOOKING GLASS <span class="highlight">LAB</span></div>
+            <div class="system-status">System: <span id="system-status-text">ONLINE</span></div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="lab-workspace">
+            <!-- Left Panel: Controls -->
+            <section class="control-panel">
+                <div class="panel-header">INPUT PARAMETERS</div>
+                
+                <!-- Model Selection -->
+                <div class="control-group">
+                    <label for="model-select">Select AI Engine</label>
+                    <select id="model-select" class="lab-input">
+                        <option value="triposr" selected>TripoSR (Fast)</option>
+                        <option value="stablefast3d">StableFast3D (High Quality)</option>
+                    </select>
+                </div>
+
+                <!-- Dual Input: Text Prompt -->
+                <div class="control-group">
+                    <label for="text-prompt">Text Prompt</label>
+                    <textarea id="text-prompt" class="lab-input" placeholder="Describe likely shape (optional)..." rows="3"></textarea>
+                </div>
+
+                <!-- Dual Input: Image Upload -->
+                <div class="control-group">
+                    <label>Image Source</label>
+                    <div id="drop-zone" class="drop-zone">
+                        <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                        <div class="drop-content">
+                            <i class="icon-upload"></i>
+                            <p>Drag & Drop Image or <span class="action-text">Click to Upload</span></p>
+                            <img id="preview-image" class="hidden">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reference Samples -->
+                <div class="control-group">
+                    <label>REFERENCE SAMPLES</label>
+                    <div class="sample-gallery" id="sample-gallery">
+                        <img src="/static/samples/chair.png" class="sample-item" data-path="chair.png" alt="Chair">
+                        <img src="/static/samples/robot.png" class="sample-item" data-path="robot.png" alt="Robot">
+                        <img src="/static/samples/teapot.png" class="sample-item" data-path="teapot.png" alt="Teapot">
+                        <img src="/static/samples/horse.png" class="sample-item" data-path="horse.png" alt="Horse">
+                        <img src="/static/samples/hamburger.png" class="sample-item" data-path="hamburger.png" alt="Hamburger">
+                        <img src="/static/samples/poly_fox.png" class="sample-item" data-path="poly_fox.png" alt="Fox">
+                        <img src="/static/samples/flamingo.png" class="sample-item" data-path="flamingo.png" alt="Flamingo">
+                        <img src="/static/samples/unicorn.png" class="sample-item" data-path="unicorn.png" alt="Unicorn">
+                    </div>
+                </div>
+
+                <!-- Generate Button -->
+                <button id="generate-btn" class="lab-btn primary-btn">
+                    INITIALIZE GENERATION SEQUENCE
+                </button>
+            </section>
+
+            <!-- Center Panel: 3D Preview -->
+            <section class="viewport-panel">
+                <div class="panel-header">HOLOGRAPHIC VIEWPORT</div>
+                <div id="canvas-container"></div>
+
+                <div class="fine-control-pad" aria-label="Precision Rotation Controls">
+                    <button id="rot-up" class="pad-btn pad-up" type="button" aria-label="Rotate Up">↑</button>
+                    <button id="rot-left" class="pad-btn pad-left" type="button" aria-label="Rotate Left">←</button>
+                    <button id="rot-reset" class="pad-btn pad-reset" type="button" aria-label="Reset Rotation">Reset</button>
+                    <button id="rot-right" class="pad-btn pad-right" type="button" aria-label="Rotate Right">→</button>
+                    <button id="rot-down" class="pad-btn pad-down" type="button" aria-label="Rotate Down">↓</button>
+                    <button id="zoom-in" class="pad-btn pad-zoom-in" type="button" aria-label="Zoom In">+</button>
+                    <button id="zoom-out" class="pad-btn pad-zoom-out" type="button" aria-label="Zoom Out">−</button>
+                </div>
+                
+                <div class="viewport-controls">
+                    <button id="view-hologram-btn" class="lab-btn holograph-btn">
+                        VIEW IN LOOKING GLASS
+                    </button>
+                </div>
+            </section>
+
+            <!-- Right Panel: Diagnostics -->
+            <section class="diagnostics-panel">
+                <div class="panel-header">SYSTEM DIAGNOSTICS</div>
+                
+                <div class="monitor-group">
+                    <div class="monitor-label">GPU 0 (GTX 1060)</div>
+                    <div class="progress-bar-container">
+                        <div id="gpu0-bar" class="progress-bar" style="width: 0%"></div>
+                    </div>
+                    <div class="monitor-value"><span id="gpu0-val">0</span> MB / 6060 MB</div>
+                </div>
+
+                <div class="monitor-group">
+                    <div class="monitor-label">GPU 1 (GTX 1060)</div>
+                    <div class="progress-bar-container">
+                        <div id="gpu1-bar" class="progress-bar" style="width: 0%"></div>
+                    </div>
+                    <div class="monitor-value"><span id="gpu1-val">0</span> MB / 6060 MB</div>
+                </div>
+
+                <div class="log-console">
+                    <div class="console-header">EVENT LOG</div>
+                    <div id="console-output" class="console-content">
+                        <div class="log-entry system">> System initialized.</div>
+                        <div class="log-entry system">> Standing by for input.</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="lab-footer">
+            <a href="https://lookingglassfactory.com/software/looking-glass-bridge" target="_blank" class="bridge-link">
+                <strong>Prerequisite:</strong> Download Looking Glass Bridge to enable holographic display.
+            </a>
+        </footer>
+    </div>
+
+    <!-- Main Logic -->
+    <script type="module" src="/static/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+# Core API
+fastapi
+uvicorn
+python-multipart
+
+# ML / 3D stack
+torch
+torchvision
+diffusers
+transformers
+huggingface_hub
+safetensors
+einops
+jaxtyping
+omegaconf
+numpy
+trimesh
+Pillow
+rembg[gpu]
+open_clip_torch
+pynanoinstantmeshes
+gpytoolbox
+mcubes
+xatlas
+moderngl
+imageio[ffmpeg]
+
+# UI / tooling
+gradio
+tqdm
+mcp
+
+# Local extension packages used by Stable Fast 3D
+./stable-fast-3d/texture_baker/
+./stable-fast-3d/uv_unwrapper/

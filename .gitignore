@@ -1,0 +1,21 @@
+# Virtual environments
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+**/__pycache__/
+*.py[cod]
+
+# Logs
+*.log
+
+# Model/data artifacts
+weights/
+output/
+outputs/
+TripoSR/
+stable-fast-3d/
+
+# Built/downloaded frontend lib
+static/libs/webxr.js
